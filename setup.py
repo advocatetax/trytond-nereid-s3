@@ -3,7 +3,7 @@
 """
     setup
 
-    :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 import sys
@@ -32,8 +32,7 @@ class SQLiteTest(Command):
         if self.distribution.tests_require:
             self.distribution.fetch_build_eggs(self.distribution.tests_require)
 
-        from trytond.config import CONFIG
-        CONFIG['db_type'] = 'sqlite'
+        os.environ['TRYTOND_DATABASE_URI'] = 'sqlite://'
         os.environ['DB_NAME'] = ':memory:'
 
         from tests import suite
@@ -42,37 +41,6 @@ class SQLiteTest(Command):
         if test_result.wasSuccessful():
             sys.exit(0)
         sys.exit(-1)
-
-
-class XMLTests(Command):
-    """Runs the tests and save the result to an XML file
-
-    Running this requires unittest-xml-reporting which can
-    be installed using::
-
-        pip install unittest-xml-reporting
-
-    """
-    description = "Run nosetests with coverage"
-
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        import coverage
-        import xmlrunner
-        cov = coverage.coverage(source=["trytond.modules.nereid_s3"])
-        cov.start()
-        from tests import suite
-        xmlrunner.XMLTestRunner(output="xml-test-results").run(suite())
-        cov.stop()
-        cov.save()
-        cov.xml_report(outfile="coverage.xml")
 
 
 config = ConfigParser.ConfigParser()
@@ -119,7 +87,7 @@ setup(
     ],
     package_data={
         'trytond.modules.nereid_s3': info.get('xml', [])
-        + ['tryton.cfg']
+        + ['tryton.cfg', 'view/*.xml']
     },
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -132,7 +100,6 @@ setup(
         'License :: OSI Approved :: GNU General Public License (GPL)',
         'Natural Language :: English',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Topic :: Office/Business',
     ],
@@ -148,7 +115,6 @@ setup(
     ],
     test_suite='tests',
     cmdclass={
-        'xmltests': XMLTests,
         'test': SQLiteTest,
     },
     test_loader='trytond.test_loader:Loader',

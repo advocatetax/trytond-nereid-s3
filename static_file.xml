@@ -3,53 +3,14 @@
   <data>
     <record id="nereid_static_folder_form" model="ir.ui.view">
         <field name="model">nereid.static.folder</field>
-        <field name="type">form</field>
         <field name="inherit" ref="nereid.nereid_static_folder_form"/>
-        <field name="arch" type="xml">
-            <![CDATA[
-                <data>
-                    <xpath expr="/form/field[@name='description']" position="after">
-                        <label name="s3_use_bucket"/>
-                        <field name="s3_use_bucket"/>
-                    </xpath>
-                    <xpath expr="/form/notebook" position="inside">
-                        <page id="s3_settings" string="S3 Settings"
-                                states="{'invisible': Not(Bool(Eval('s3_use_bucket')))}">
-                            <label name="s3_access_key"/>
-                            <field name="s3_access_key"/>
-                            <label name="s3_secret_key"/>
-                            <field name="s3_secret_key"/>
-                            <label name="s3_bucket_name"/>
-                            <field name="s3_bucket_name"/>
-                            <label name="s3_object_prefix"/>
-                            <field name="s3_object_prefix"/>
-                            <group id="cloudfront_information" string="Cloudfront Information" colspan="4" col="4">
-                                <label name="s3_cloudfront_cname"/>
-                                <field name="s3_cloudfront_cname"/>
-                            </group>
-                        </page>
-                    </xpath>
-                </data>
-            ]]>
-        </field>
+        <field name="name">static_folder_form</field>
     </record>
 
     <record id="nereid_static_folder_tree" model="ir.ui.view">
         <field name="model">nereid.static.folder</field>
-        <field name="type">tree</field>
         <field name="inherit" ref="nereid.nereid_static_folder_tree"/>
-        <field name="arch" type="xml">
-            <![CDATA[
-                <data>
-                    <xpath expr="/tree/field[@name='folder_name']"
-                            position="after">
-                        <field name="s3_use_bucket"/>
-                        <field name="s3_bucket_name"/>
-                        <field name="s3_cloudfront_cname"/>
-                    </xpath>
-                </data>
-            ]]>
-        </field>
+        <field name="name">static_folder_tree</field>
     </record>
 
    </data>

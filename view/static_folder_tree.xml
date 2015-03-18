@@ -1,0 +1,8 @@
+<data>
+    <xpath expr="/tree/field[@name='folder_name']"
+            position="after">
+        <field name="s3_use_bucket"/>
+        <field name="s3_bucket_name"/>
+        <field name="s3_cloudfront_cname"/>
+    </xpath>
+</data>

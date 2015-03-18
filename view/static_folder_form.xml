@@ -1,0 +1,23 @@
+<data>
+    <xpath expr="/form/field[@name='description']" position="after">
+        <label name="s3_use_bucket"/>
+        <field name="s3_use_bucket"/>
+    </xpath>
+    <xpath expr="/form/notebook" position="inside">
+        <page id="s3_settings" string="S3 Settings"
+                states="{'invisible': Not(Bool(Eval('s3_use_bucket')))}">
+            <label name="s3_access_key"/>
+            <field name="s3_access_key"/>
+            <label name="s3_secret_key"/>
+            <field name="s3_secret_key"/>
+            <label name="s3_bucket_name"/>
+            <field name="s3_bucket_name"/>
+            <label name="s3_object_prefix"/>
+            <field name="s3_object_prefix"/>
+            <group id="cloudfront_information" string="Cloudfront Information" colspan="4" col="4">
+                <label name="s3_cloudfront_cname"/>
+                <field name="s3_cloudfront_cname"/>
+            </group>
+        </page>
+    </xpath>
+</data>

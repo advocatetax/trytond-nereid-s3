@@ -4,7 +4,7 @@
 
     Static File
 
-    :copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited
+    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
 from trytond.model import fields
@@ -87,17 +87,6 @@ class NereidStaticFolder:
 class NereidStaticFile:
     __name__ = "nereid.static.file"
 
-    folder = fields.Many2One(
-        'nereid.static.folder', 'Folder', select=True, required=True,
-        domain=[('s3_use_bucket', '=', Eval('is_s3_bucket'))],
-        depends=['is_s3_bucket'],
-    )
-    type = fields.Selection([
-        ('local', 'Local File'),
-        ('remote', 'Remote File'),
-        ('s3', 'S3'),
-    ], 'File Type')
-
     is_s3_bucket = fields.Function(
         fields.Boolean("S3 Bucket?"), 'get_is_s3_bucket'
     )
@@ -167,7 +156,7 @@ class NereidStaticFile:
             )
         return super(NereidStaticFile, self).get_file_path(name)
 
-    @fields.depends('type', 's3_bucket')
+    @fields.depends('type')
     def on_change_type(self):
         """
         Changes the value of functional field when type is changed
@@ -175,22 +164,17 @@ class NereidStaticFile:
         :return: Updated value of functional field
         """
         return {
-            'is_s3_bucket': self['type'] == 's3'
+            'is_s3_bucket': self.type == 's3'
         }
 
-    @classmethod
-    def get_is_s3_bucket(cls, files, name):
+    def get_is_s3_bucket(self, name):
         """
         Gets value of s3_use_bucket of folder
 
-        :param files: Browse record of static file
         :param name: Field name
         :return: value of field
         """
-        res = {}
-        for file in files:
-            res[file.id] = bool(file.folder.s3_use_bucket)
-        return res
+        return bool(self.folder.s3_use_bucket)
 
     def check_use_s3_bucket(self):
         """
@@ -213,6 +197,13 @@ class NereidStaticFile:
     @classmethod
     def __setup__(cls):
         super(NereidStaticFile, cls).__setup__()
+
+        s3 = ('s3', 'S3')
+        if s3 not in cls.type.selection:
+            cls.type.selection.append(s3)
+
+        cls.folder.domain = [('s3_use_bucket', '=', Eval('is_s3_bucket'))]
+        cls.folder.depends.append('is_s3_bucket')
 
         cls._error_messages.update({
             "s3_bucket_required": "Folder must have s3 bucket if type is 'S3'",

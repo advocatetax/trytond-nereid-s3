@@ -112,7 +112,7 @@ class NereidStaticFile:
         fields.Boolean("S3 Bucket?"), 'get_is_s3_bucket'
     )
     s3_key = fields.Function(fields.Char("S3 key"), "get_s3_key")
-    is_large_file = fields.Boolean('Is Large File', readonly=True)
+    is_large_file = fields.Boolean('Is Large File')
 
     def get_post_form_args(self):
         """

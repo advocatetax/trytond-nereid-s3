@@ -7,7 +7,7 @@
 :license: GPLv3, see LICENSE for more details
 '''
 from trytond.pool import Pool
-from static_file import NereidStaticFolder, NereidStaticFile
+from static_file import NereidStaticFolder, NereidStaticFile, UploadWizard
 
 
 def register():
@@ -15,3 +15,8 @@ def register():
         NereidStaticFolder,
         NereidStaticFile,
         module='nereid_s3', type_='model')
+
+    Pool.register(
+        UploadWizard,
+        module='nereid_s3', type_='wizard'
+    )

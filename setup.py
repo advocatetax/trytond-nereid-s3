@@ -76,7 +76,7 @@ requires.append(
 setup(
     name='openlabs_%s' % module_name,
     version=info.get('version', '0.0.1'),
-    description=info.get('description', ''),
+    description='Amazon S3 backend for Nereid Static Files',
     author=info.get('author', ''),
     author_email=info.get('email', ''),
     url=info.get('website', ''),

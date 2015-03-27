@@ -7,13 +7,20 @@
     :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
     :license: BSD, see LICENSE for more details.
 """
-from trytond.model import fields
-from trytond.pyson import Eval, Bool
 from boto.s3 import connection
 from boto.s3 import key
-from trytond.pool import PoolMeta
+from boto import exception
+import base64
+import json
 
-__all__ = ['NereidStaticFolder', 'NereidStaticFile']
+from trytond.model import fields
+from trytond.pyson import Eval, Bool
+from trytond.transaction import Transaction
+from trytond.wizard import Wizard, StateAction
+from trytond.pool import Pool, PoolMeta
+from trytond.model import ModelView
+
+__all__ = ['NereidStaticFolder', 'NereidStaticFile', 'UploadWizard']
 __metaclass__ = PoolMeta
 
 
@@ -40,6 +47,10 @@ class NereidStaticFolder:
     )
     s3_object_prefix = fields.Char("S3 Object Prefix")
 
+    # TODO: Visible if S3
+    s3_allow_large_uploads = fields.Boolean('Allow Large file uploads')
+    s3_upload_form_ttl = fields.Integer('Upload form validity')
+
     @classmethod
     def __setup__(cls):
         super(NereidStaticFolder, cls).__setup__()
@@ -47,6 +58,10 @@ class NereidStaticFolder:
         cls._error_messages.update({
             "invalid_cname": "Cloudfront CNAME with '/' at the end is not " +
             "allowed",
+            "not_s3_bucket": "The file's folder is not an S3 bucket",
+            "folder_not_for_large_uploads": (
+                "This file's folder does not allow large file uploads"
+            ),
         })
 
     @classmethod
@@ -60,13 +75,19 @@ class NereidStaticFolder:
         for record in records:
             record.check_cloudfront_cname()
 
+    def get_s3_connection(self):
+        """
+        Returns an active S3 connection object
+        """
+        return connection.S3Connection(
+            self.s3_access_key, self.s3_secret_key
+        )
+
     def get_bucket(self):
         '''
         Return an S3 bucket for the static file
         '''
-        s3_conn = connection.S3Connection(
-            self.s3_access_key, self.s3_secret_key
-        )
+        s3_conn = self.get_s3_connection()
         return s3_conn.get_bucket(self.s3_bucket_name)
 
     @staticmethod
@@ -91,6 +112,28 @@ class NereidStaticFile:
         fields.Boolean("S3 Bucket?"), 'get_is_s3_bucket'
     )
     s3_key = fields.Function(fields.Char("S3 key"), "get_s3_key")
+    is_large_file = fields.Boolean('Is Large File', readonly=True)
+
+    def get_post_form_args(self):
+        """
+        Returns the POST form arguments for the specific static file. It makes a
+        connection to S3 via Boto and returns a dictionary, which can then be
+        processed on the client side.
+        """
+        if not self.folder.s3_use_bucket:
+            self.folder.raise_user_error('not_s3_bucket')
+
+        if not self.folder.s3_allow_large_uploads:
+            self.folder.raise_user_error('folder_not_for_large_uploads')
+
+        conn = self.folder.get_s3_connection()
+        res = conn.build_post_form_args(
+            self.folder.s3_bucket_name,
+            self.name,
+            http_method='https',
+            expires_in=self.folder.s3_upload_form_ttl,
+        )
+        return res
 
     def get_s3_key(self, name):
         """
@@ -123,6 +166,8 @@ class NereidStaticFile:
         if not value:
             return
         if self.type == "s3":
+            if self.is_large_file:
+                return
             bucket = self.folder.get_bucket()
             s3key = key.Key(bucket)
             s3key.key = self.s3_key
@@ -141,7 +186,19 @@ class NereidStaticFile:
             bucket = self.folder.get_bucket()
             s3key = key.Key(bucket)
             s3key.key = self.s3_key
-            return buffer(s3key.get_contents_as_string())
+            try:
+                return buffer(s3key.get_contents_as_string())
+            except exception.S3ResponseError as error:
+                if error.status == 404:
+                    with Transaction().new_cursor(readonly=False) as txn:
+                        self.raise_user_warning(
+                            's3_file_missing',
+                            'file_empty_s3'
+                        )
+                        # Commit cursor to clear DB records
+                        txn.cursor.commit()
+                    return
+                raise
         return super(NereidStaticFile, self).get_file_binary(name)
 
     def get_file_path(self, name):
@@ -195,6 +252,11 @@ class NereidStaticFile:
             record.check_use_s3_bucket()
 
     @classmethod
+    @ModelView.button_action('nereid_s3.wizard_upload_large_files')
+    def upload_large_file(cls, records):
+        pass
+
+    @classmethod
     def __setup__(cls):
         super(NereidStaticFile, cls).__setup__()
 
@@ -207,4 +269,37 @@ class NereidStaticFile:
 
         cls._error_messages.update({
             "s3_bucket_required": "Folder must have s3 bucket if type is 'S3'",
+            "file_empty_s3": "The file's contents are empty on S3",
         })
+        cls._buttons.update({
+            'upload_large_file': {
+                'invisible': ~Bool(Eval('is_large_file')),
+            },
+        })
+
+
+class UploadWizard(Wizard):
+    __name__ = 'nereid.static.file.upload_wizard'
+
+    start = StateAction('nereid_s3.url_upload')
+
+    # XXX: Perhaps remove hardcoding in future
+    base_url = 'https://openlabs.github.io/s3uploader/v1/upload.html'
+
+    def do_start(self, action):
+        """
+        This method overrides the action url given in XML and inserts the url
+        in the action object. It then proceeds to return the action.
+        """
+        StaticFile = Pool().get('nereid.static.file')
+
+        static_file = StaticFile(Transaction().context.get('active_id'))
+        static_file.is_large_file = True
+        static_file.save()
+
+        post_args = static_file.get_post_form_args()
+
+        action['url'] = self.base_url + '?data=' + \
+            base64.b64encode(json.dumps(post_args))
+
+        return action, {}

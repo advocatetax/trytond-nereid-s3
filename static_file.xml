@@ -13,6 +13,38 @@
         <field name="name">static_folder_tree</field>
     </record>
 
+    <record id="nereid_static_file_form" model="ir.ui.view">
+        <field name="model">nereid.static.file</field>
+        <field name="inherit" ref="nereid.nereid_static_file_form"/>
+        <field name="name">static_file_form</field>
+    </record>
+
+    <!-- File Upload Button Permissions -->
+    <record model="res.group" id="group_large_file_upload">
+        <field name="name">Large File Uploaders</field>
+    </record>
+
+    <record model="ir.model.button" id="upload_button">
+        <field name="name">upload_large_file</field>
+        <field name="model" search="[('model', '=', 'nereid.static.file')]"/>
+    </record>
+    <record model="ir.model.button-res.group"
+        id="group_large_file_upload_button_perm">
+        <field name="button" ref="nereid_s3.upload_button"/>
+        <field name="group" ref="nereid_s3.group_large_file_upload"/>
+    </record>
+
+    <!-- URL Placeholder -->
+    <record model="ir.action.url" id="url_upload">
+        <field name="name">File Uploader</field>
+        <field name="url">URL Placeholder</field>
+    </record>
+
+    <!-- File Upload Wizard -->
+    <record model="ir.action.wizard" id="wizard_upload_large_files">
+        <field name="name">Upload Large Files</field>
+        <field name="wiz_name">nereid.static.file.upload_wizard</field>
+    </record>
    </data>
 </tryton>
 

@@ -1,0 +1,5 @@
+<data>
+    <xpath expr="/form/field[@name='mimetype']" position="after">
+        <button name="upload_large_file" string="Upload Large File"/>
+    </xpath>
+</data>

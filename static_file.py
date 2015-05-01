@@ -111,7 +111,10 @@ class NereidStaticFile:
     is_s3_bucket = fields.Function(
         fields.Boolean("S3 Bucket?"), 'get_is_s3_bucket'
     )
-    s3_key = fields.Function(fields.Char("S3 key"), "get_s3_key")
+    s3_key = fields.Function(
+        fields.Char("S3 key"), getter="get_s3_key",
+        searcher="search_s3_key"
+    )
     is_large_file = fields.Boolean('Is Large File')
 
     def get_post_form_args(self):
@@ -134,6 +137,18 @@ class NereidStaticFile:
             expires_in=self.folder.s3_upload_form_ttl,
         )
         return res
+
+    @classmethod
+    def search_s3_key(cls, name, clause):
+        """
+        Searcher for s3_key
+        """
+        if '/' in clause[-1]:
+            file_name = clause[-1].split('/')[1]
+        else:
+            file_name = clause[-1]
+
+        return [('name', '=', file_name)]
 
     def get_s3_key(self, name):
         """

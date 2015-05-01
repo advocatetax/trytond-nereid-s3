@@ -2,6 +2,17 @@
     <xpath expr="/form/field[@name='mimetype']" position="after">
         <label name="is_large_file"/>
         <field name="is_large_file"/>
-        <button name="upload_large_file" string="Upload Large File"/>
+        <newline/>
+        <button name="upload_large_file" string="Upload Large File" colspan="2"/>
+    </xpath>
+    <xpath expr="/form/separator[@id='sepr_preview']" position="replace">
+    </xpath>
+    <xpath expr="//form/field[@name='file_binary']" position="replace">
+        <separator string="Preview" colspan="4" id="sepr_preview" />
+        <group id="image_preview" states="{'invisible': Bool(Eval('is_large_file'))}"  colspan="4">
+            <field name="file_binary" widget="image" colspan="4"/>
+        </group>
+        <newline/>
+        <label id="preview" string="You can't preview large files" states="{'invisible': ~Bool(Eval('is_large_file'))}" colspan="3"/> 
     </xpath>
 </data>

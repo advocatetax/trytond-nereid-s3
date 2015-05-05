@@ -11,7 +11,7 @@
             <label name="s3_access_key"/>
             <field name="s3_access_key"/>
             <label name="s3_secret_key"/>
-            <field name="s3_secret_key"/>
+            <field name="s3_secret_key" widget="password"/>
             <label name="s3_bucket_name"/>
             <field name="s3_bucket_name"/>
             <label name="s3_object_prefix"/>

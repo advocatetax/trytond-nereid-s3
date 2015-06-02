@@ -177,25 +177,32 @@ class NereidStaticFile:
         :param name: Field name
         :return: File buffer
         '''
-        if self.folder.type != "s3":
-            return super(NereidStaticFile, self).get_file_binary(name)
-
-        bucket = self.folder.get_bucket()
-        s3key = key.Key(bucket)
-        s3key.key = self.s3_key
-        try:
-            return buffer(s3key.get_contents_as_string())
-        except exception.S3ResponseError as error:
-            if error.status == 404:
-                with Transaction().new_cursor(readonly=False) as txn:
-                    self.raise_user_warning(
-                        's3_file_missing',
-                        'file_empty_s3'
-                    )
-                    # Commit cursor to clear DB records
-                    txn.cursor.commit()
+        if self.folder.type == "s3":
+            bucket = self.folder.get_bucket()
+            s3key = bucket.lookup(self.s3_key)
+            if s3key is None:
+                self.raise_user_warning(
+                    's3_file_missing',
+                    'file_empty_s3'
+                )
                 return
-            raise
+            if s3key.size > (1000000 * 10):     # 10 MB
+                # TODO: make the size configurable
+                return
+            try:
+                return buffer(s3key.get_contents_as_string())
+            except exception.S3ResponseError as error:
+                if error.status == 404:
+                    with Transaction().new_cursor(readonly=False) as txn:
+                        self.raise_user_warning(
+                            's3_file_missing',
+                            'file_empty_s3'
+                        )
+                        # Commit cursor to clear DB records
+                        txn.cursor.commit()
+                    return
+                raise
+        return super(NereidStaticFile, self).get_file_binary(name)
 
     def get_file_path(self, name):
         """

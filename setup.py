@@ -35,6 +35,9 @@ class SQLiteTest(Command):
         os.environ['TRYTOND_DATABASE_URI'] = 'sqlite://'
         os.environ['DB_NAME'] = ':memory:'
 
+        from trytond.config import config
+        config.add_section('nereid_s3')
+
         from tests import suite
         test_result = unittest.TextTestRunner(verbosity=3).run(suite())
 

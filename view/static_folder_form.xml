@@ -1,19 +1,11 @@
 <data>
     <xpath expr="/form/field[@name='description']" position="after">
-        <label name="s3_use_bucket"/>
-        <field name="s3_use_bucket"/>
         <label name="s3_allow_large_uploads"/>
         <field name="s3_allow_large_uploads"/>
     </xpath>
     <xpath expr="/form/notebook" position="inside">
         <page id="s3_settings" string="S3 Settings"
-                states="{'invisible': Not(Bool(Eval('s3_use_bucket')))}">
-            <label name="s3_access_key"/>
-            <field name="s3_access_key"/>
-            <label name="s3_secret_key"/>
-            <field name="s3_secret_key" widget="password"/>
-            <label name="s3_bucket_name"/>
-            <field name="s3_bucket_name"/>
+                states="{'invisible': Not(Bool(Eval('type') == 's3'))}">
             <label name="s3_object_prefix"/>
             <field name="s3_object_prefix"/>
             <label name="s3_upload_form_ttl"/>

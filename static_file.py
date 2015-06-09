@@ -15,7 +15,7 @@ import json
 
 from trytond.config import config
 from trytond.model import fields
-from trytond.pyson import Eval, Bool, Not
+from trytond.pyson import Eval, Bool
 from trytond.transaction import Transaction
 from trytond.wizard import Wizard, StateAction
 from trytond.pool import Pool, PoolMeta
@@ -24,37 +24,28 @@ from trytond.model import ModelView
 __all__ = ['NereidStaticFolder', 'NereidStaticFile', 'UploadWizard']
 __metaclass__ = PoolMeta
 
-STATES = {
-    'invisible': Not(Bool(Eval('type') == 's3')),
-}
-DEPENDS = ['type']
-
 
 class NereidStaticFolder:
     __name__ = "nereid.static.folder"
-    _rec_name = "folder_name"
 
-    s3_cloudfront_cname = fields.Char(
-        "S3 Cloudfront CNAME",
-        states={
-            'required': Bool(Eval('type') == 's3'),
-            'invisible': Not(Bool(Eval('type') == 's3')),
-        },
-        depends=DEPENDS
-    )
-    s3_object_prefix = fields.Char(
-        "S3 Object Prefix",
-        states=STATES, depends=DEPENDS
+    is_private = fields.Boolean(
+        "Is Private?", states={
+            'invisible': Bool(Eval('type') != 's3'),
+            'readonly': Bool(Eval('files')),
+        }, depends=['type', 'files']
     )
 
-    # TODO: Visible if S3
     s3_allow_large_uploads = fields.Boolean(
-        'Allow Large file uploads',
-        states=STATES, depends=DEPENDS
+        'Allow Large file uploads?',
+        states={
+            'invisible': Bool(Eval('type') != 's3'),
+        }, depends=['type']
     )
     s3_upload_form_ttl = fields.Integer(
         'Upload form validity',
-        states=STATES, depends=DEPENDS
+        states={
+            'invisible': Bool(Eval('type') != 's3'),
+        }, depends=['type']
     )
 
     @classmethod
@@ -66,24 +57,22 @@ class NereidStaticFolder:
             cls.type.selection.append(s3)
 
         cls._error_messages.update({
-            "invalid_cname": "Cloudfront CNAME with '/' at the end is not " +
-            "allowed",
-            "not_s3_bucket": "The file's folder is not an S3 bucket",
             "folder_not_for_large_uploads": (
                 "This file's folder does not allow large file uploads"
             ),
+            'invalid_name': (
+                "%s(OR) \n(3) Folder name is _private" % (
+                    cls._error_messages['invalid_name'],
+                )
+            )
         })
 
-    @classmethod
-    def validate(cls, records):
-        """
-        Checks if cloudfront cname ends with '/'
+    def check_name(self):
+        "Check if folder name is _private"
+        super(NereidStaticFolder, self).check_name()
 
-        :param records: List of active records
-        """
-        super(NereidStaticFolder, cls).validate(records)
-        for record in records:
-            record.check_cloudfront_cname()
+        if self.name == '_private':
+            self.raise_user_error('invalid_name')
 
     def get_s3_connection(self):
         """
@@ -103,30 +92,14 @@ class NereidStaticFolder:
             config.get('nereid_s3', 'bucket'),
         )
 
-    @staticmethod
-    def default_s3_cloudfront_cname():
-        """
-        Sets default for Cloudfront CNAME
-        """
-        return "http://your-domain.cloudfront.net"
-
-    def check_cloudfront_cname(self):
-        """
-        Checks for '/' at the end of Cloudfront CNAME
-        """
-        if self.s3_cloudfront_cname.endswith('/'):
-            return self.raise_user_error('invalid_cname')
-
 
 class NereidStaticFile:
     __name__ = "nereid.static.file"
 
     s3_key = fields.Function(
-        fields.Char("S3 key"), getter="get_s3_key",
-        searcher="search_s3_key"
+        fields.Char("S3 key"), getter="get_s3_key"
     )
     is_large_file = fields.Boolean('Is Large File')
-    is_private = fields.Boolean("Is Private?")
 
     def get_post_form_args(self):
         """
@@ -149,26 +122,16 @@ class NereidStaticFile:
         )
         return res
 
-    @classmethod
-    def search_s3_key(cls, name, clause):
-        """
-        Searcher for s3_key
-        """
-        if '/' in clause[-1]:
-            file_name = clause[-1].split('/')[1]
-        else:
-            file_name = clause[-1]
-
-        return [('name', '=', file_name)]
-
     def get_s3_key(self, name):
         """
         Returns s3 key for static file
         """
-        if self.folder.s3_object_prefix:
-            return '/'.join([self.folder.s3_object_prefix, self.name])
-        else:
-            return self.name
+        make_key_from = [self.folder.name, self.name]
+
+        if self.folder.is_private:
+            make_key_from.insert(0, '_private')
+
+        return '/'.join(make_key_from)
 
     def get_url(self, name):
         """
@@ -176,11 +139,16 @@ class NereidStaticFile:
 
         :param name: Field name
         """
-        if self.folder.type == 's3':
-            return '/'.join(
-                [self.folder.s3_cloudfront_cname, self.s3_key]
-            )
-        return super(NereidStaticFile, self).get_url(name)
+        if self.folder.type != 's3':
+            return super(NereidStaticFile, self).get_url(name)
+
+        cloudfront = config.get('nereid_s3', 'cloudfront')
+        if cloudfront:
+            return '/'.join([cloudfront, self.s3_key])
+
+        return "https://s3.amazonaws.com/%s/%s" % (
+            config.get('nereid_s3', 'bucket'), self.s3_key
+        )
 
     def _set_file_binary(self, value):
         """
@@ -191,14 +159,15 @@ class NereidStaticFile:
         """
         if not value:
             return
-        if self.folder.type == "s3":
-            if self.is_large_file:
-                return
-            bucket = self.folder.get_bucket()
-            s3key = key.Key(bucket)
-            s3key.key = self.s3_key
-            return s3key.set_contents_from_string(value[:])
-        return super(NereidStaticFile, self)._set_file_binary(value)
+        if self.folder.type != "s3":
+            return super(NereidStaticFile, self)._set_file_binary(value)
+
+        if self.is_large_file:
+            return
+        bucket = self.folder.get_bucket()
+        s3key = key.Key(bucket)
+        s3key.key = self.s3_key
+        return s3key.set_contents_from_string(value[:])
 
     def get_file_binary(self, name):
         '''
@@ -208,24 +177,25 @@ class NereidStaticFile:
         :param name: Field name
         :return: File buffer
         '''
-        if self.folder.type == "s3":
-            bucket = self.folder.get_bucket()
-            s3key = key.Key(bucket)
-            s3key.key = self.s3_key
-            try:
-                return buffer(s3key.get_contents_as_string())
-            except exception.S3ResponseError as error:
-                if error.status == 404:
-                    with Transaction().new_cursor(readonly=False) as txn:
-                        self.raise_user_warning(
-                            's3_file_missing',
-                            'file_empty_s3'
-                        )
-                        # Commit cursor to clear DB records
-                        txn.cursor.commit()
-                    return
-                raise
-        return super(NereidStaticFile, self).get_file_binary(name)
+        if self.folder.type != "s3":
+            return super(NereidStaticFile, self).get_file_binary(name)
+
+        bucket = self.folder.get_bucket()
+        s3key = key.Key(bucket)
+        s3key.key = self.s3_key
+        try:
+            return buffer(s3key.get_contents_as_string())
+        except exception.S3ResponseError as error:
+            if error.status == 404:
+                with Transaction().new_cursor(readonly=False) as txn:
+                    self.raise_user_warning(
+                        's3_file_missing',
+                        'file_empty_s3'
+                    )
+                    # Commit cursor to clear DB records
+                    txn.cursor.commit()
+                return
+            raise
 
     def get_file_path(self, name):
         """
@@ -233,11 +203,16 @@ class NereidStaticFile:
 
         :param static_file: Browse record of the static file
         """
-        if self.folder.type == "s3":
-            return '/'.join(
-                [self.folder.s3_cloudfront_cname, self.s3_key]
-            )
-        return super(NereidStaticFile, self).get_file_path(name)
+        if self.folder.type != "s3":
+            return super(NereidStaticFile, self).get_file_path(name)
+
+        cloudfront = config.get('nereid_s3', 'cloudfront')
+        if cloudfront:
+            return '/'.join([cloudfront, self.s3_key])
+
+        return "https://s3.amazonaws.com/%s/%s" % (
+            config.get('nereid_s3', 'bucket'), self.s3_key
+        )
 
     @classmethod
     @ModelView.button_action('nereid_s3.wizard_upload_large_files')

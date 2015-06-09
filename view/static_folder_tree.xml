@@ -1,6 +1,5 @@
 <data>
-    <xpath expr="/tree/field[@name='folder_name']"
-            position="after">
-        <field name="s3_cloudfront_cname"/>
+    <xpath expr="/tree/field[@name='name']" position="after">
+        <field name="is_private"/>
     </xpath>
 </data>

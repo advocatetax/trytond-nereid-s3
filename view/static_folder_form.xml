@@ -1,19 +1,12 @@
 <data>
-    <xpath expr="/form/field[@name='description']" position="after">
-        <label name="s3_allow_large_uploads"/>
-        <field name="s3_allow_large_uploads"/>
-    </xpath>
-    <xpath expr="/form/notebook" position="inside">
-        <page id="s3_settings" string="S3 Settings"
-                states="{'invisible': Not(Bool(Eval('type') == 's3'))}">
-            <label name="s3_object_prefix"/>
-            <field name="s3_object_prefix"/>
-            <label name="s3_upload_form_ttl"/>
-            <field name="s3_upload_form_ttl"/>
-            <group id="cloudfront_information" string="Cloudfront Information" colspan="4" col="4">
-                <label name="s3_cloudfront_cname"/>
-                <field name="s3_cloudfront_cname"/>
-            </group>
-        </page>
+    <xpath expr="/form/field[@name='type']" position="after">
+        <group id="checkboxes" col="4" colspan="2">
+            <label name="is_private"/>
+            <field name="is_private"/>
+            <label name="s3_allow_large_uploads"/>
+            <field name="s3_allow_large_uploads"/>
+        </group>
+        <label name="s3_upload_form_ttl"/>
+        <field name="s3_upload_form_ttl"/>
     </xpath>
 </data>

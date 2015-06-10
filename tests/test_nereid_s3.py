@@ -95,10 +95,9 @@ class TestNereidS3(unittest.TestCase):
 
             # Create folder for amazon s3
             folder, = self.static_folder.create([{
-                'folder_name': 's3store',
+                'name': 's3store',
                 'description': 'S3 Folder',
                 'type': 's3',
-                's3_cloudfront_cname': 'http://test.cloudfront.net',
             }])
             self.assert_(folder.id)
 
@@ -116,21 +115,6 @@ class TestNereidS3(unittest.TestCase):
 
             self.assertEqual(
                 file.file_binary, buffer('testfile')
-            )
-
-    def test0020_static_folder_with_invalid_cname(self):
-        """
-        Checks if error is raised for cname ending with '/'
-        """
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            # Create folder for amazon s3 with cname that ends with '/'
-            self.assertRaises(
-                UserError, self.static_folder.create, [{
-                    'folder_name': 's3store',
-                    'description': 'S3 Folder',
-                    'type': 's3',
-                    's3_cloudfront_cname': 'http://test.cloudfront.net/',
-                }]
             )
 
 

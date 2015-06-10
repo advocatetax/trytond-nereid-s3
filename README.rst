@@ -14,6 +14,40 @@ Trytond-nereid-s3
     :target: https://pypi.python.org/pypi/openlabs_nereid_s3
     :alt: Development Status
 
+Nereid-S3 helps to upload files to amazon-s3 from tryton layer. Files are
+stored in a folder. You can create multiple folders. Folder could be public or
+private.
+
+You need to specify following options under nereid_s3 section in your tryton
+configuration file::
+
+  [nereid_s3]
+  access_key =
+  secret_key =
+  bucket =
+  cloudfront =
+
+Internally, private folder has key prefixed with ``_private``. To
+make this work, following bucket policy should be applied::
+
+	{
+	  "Version": "2008-10-17",
+		"Statement": [
+			{
+				"Sid": "AddPerm",
+				"Effect": "Allow",
+				"Principal": {
+					"AWS": "*"
+				},
+				"Action": "s3:GetObject",
+				"NotResource": [
+					"arn:aws:s3:::bucket_name/_private",
+					"arn:aws:s3:::bucket_name/_private/*"
+				]
+			}
+		]
+	}
+
 Authors and Contributors
 ------------------------
 

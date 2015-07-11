@@ -29,6 +29,11 @@ from trytond.tests.test_tryton import POOL, DB_NAME, USER, CONTEXT, test_view,\
     test_depends
 from trytond.transaction import Transaction
 from trytond.exceptions import UserError
+from trytond.config import config
+
+config.set('nereid_s3', 's3_access_key', 'ABCD')
+config.set('nereid_s3', 's3_secret_key', '123XYZ')
+config.set('nereid_s3', 's3_bucket_name', 'tryton-test-s3')
 
 
 class TestNereidS3(unittest.TestCase):
@@ -90,24 +95,19 @@ class TestNereidS3(unittest.TestCase):
 
             # Create folder for amazon s3
             folder, = self.static_folder.create([{
-                'folder_name': 's3store',
+                'name': 's3store',
                 'description': 'S3 Folder',
-                's3_use_bucket': True,
-                's3_access_key': 'ABCD',
-                's3_secret_key': '123XYZ',
-                's3_bucket_name': 'tryton-test-s3',
-                's3_cloudfront_cname': 'http://test.cloudfront.net',
+                'type': 's3',
             }])
             self.assert_(folder.id)
 
             s3_folder = self.static_folder.search([
-                ('s3_use_bucket', '=', True)
+                ('type', '=', 's3')
             ])[0]
 
             # Create static file for amazon s3 bucket
             file, = self.static_file.create([{
                 'name': 'testfile.png',
-                'type': 's3',
                 'folder': s3_folder,
                 'file_binary': buffer('testfile')
             }])
@@ -115,24 +115,6 @@ class TestNereidS3(unittest.TestCase):
 
             self.assertEqual(
                 file.file_binary, buffer('testfile')
-            )
-
-    def test0020_static_folder_with_invalid_cname(self):
-        """
-        Checks if error is raised for cname ending with '/'
-        """
-        with Transaction().start(DB_NAME, USER, context=CONTEXT):
-            # Create folder for amazon s3 with cname that ends with '/'
-            self.assertRaises(
-                UserError, self.static_folder.create, [{
-                    'folder_name': 's3store',
-                    'description': 'S3 Folder',
-                    's3_use_bucket': True,
-                    's3_access_key': 'ABCD',
-                    's3_secret_key': '123XYZ',
-                    's3_bucket_name': 'tryton-test-s3',
-                    's3_cloudfront_cname': 'http://test.cloudfront.net/',
-                }]
             )
 
 

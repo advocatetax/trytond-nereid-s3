@@ -3,8 +3,6 @@
 
     Tryton module to support Nereid-S3 for Amazon S3 storage
 
-:copyright: (c) 2013 by Openlabs Technologies & Consulting (P) Limited.
-:license: GPLv3, see LICENSE for more details
 '''
 from trytond.pool import Pool
 from static_file import NereidStaticFolder, NereidStaticFile, UploadWizard

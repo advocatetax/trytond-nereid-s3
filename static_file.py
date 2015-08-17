@@ -4,8 +4,6 @@
 
     Static File
 
-    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
-    :license: BSD, see LICENSE for more details.
 """
 from boto.s3 import connection
 from boto.s3 import key
@@ -246,7 +244,7 @@ class UploadWizard(Wizard):
     start = StateAction('nereid_s3.url_upload')
 
     # XXX: Perhaps remove hardcoding in future
-    base_url = 'https://openlabs.github.io/s3uploader/v1/upload.html'
+    base_url = 'https://fulfilio.github.io/s3uploader/v1/upload.html'
 
     def do_start(self, action):
         """

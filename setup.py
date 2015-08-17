@@ -3,8 +3,6 @@
 """
     setup
 
-    :copyright: (c) 2013-2015 by Openlabs Technologies & Consulting (P) Limited
-    :license: BSD, see LICENSE for more details.
 """
 import sys
 import os
@@ -77,7 +75,7 @@ requires.append(
 )
 
 setup(
-    name='openlabs_%s' % module_name,
+    name='fio_%s' % module_name,
     version=info.get('version', '0.0.1'),
     description='Amazon S3 backend for Nereid Static Files',
     author=info.get('author', ''),
@@ -106,7 +104,7 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Topic :: Office/Business',
     ],
-    license='GPL-3',
+    license='BSD',
     install_requires=requires,
     zip_safe=False,
     entry_points="""

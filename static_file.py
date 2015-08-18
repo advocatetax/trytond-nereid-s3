@@ -114,7 +114,7 @@ class NereidStaticFile:
         conn = self.folder.get_s3_connection()
         res = conn.build_post_form_args(
             config.get('nereid_s3', 'bucket'),
-            self.name,
+            self.s3_key,
             http_method='https',
             expires_in=self.folder.s3_upload_form_ttl,
         )

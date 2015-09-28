@@ -23,10 +23,10 @@ from boto.s3 import connection
 from boto.s3.bucket import Bucket
 from boto.s3.key import Key
 import trytond.tests.test_tryton
-from trytond.tests.test_tryton import POOL, DB_NAME, USER, CONTEXT, test_view,\
-    test_depends
+from trytond.tests.test_tryton import (
+    POOL, DB_NAME, USER, CONTEXT, ModuleTestCase
+)
 from trytond.transaction import Transaction
-from trytond.exceptions import UserError
 from trytond.config import config
 
 config.set('nereid_s3', 's3_access_key', 'ABCD')
@@ -34,10 +34,12 @@ config.set('nereid_s3', 's3_secret_key', '123XYZ')
 config.set('nereid_s3', 's3_bucket_name', 'tryton-test-s3')
 
 
-class TestNereidS3(unittest.TestCase):
+class TestNereidS3(ModuleTestCase):
     '''
     Test Nereid S3
     '''
+
+    module = 'nereid_s3'
 
     def setUp(self):
         trytond.tests.test_tryton.install_module('nereid_s3')
@@ -72,18 +74,6 @@ class TestNereidS3(unittest.TestCase):
     def tearDown(self):
         self.s3_api_patcher.stop()
         self.s3_key_patcher.stop()
-
-    def test0005views(self):
-        '''
-        Test views.
-        '''
-        test_view('nereid_s3')
-
-    def test0006depends(self):
-        '''
-        Test depends.
-        '''
-        test_depends()
 
     def test0010_static_file(self):
         """

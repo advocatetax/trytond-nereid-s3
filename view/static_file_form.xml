@@ -9,10 +9,10 @@
     </xpath>
     <xpath expr="//form/field[@name='file_binary']" position="replace">
         <separator string="Preview" colspan="4" id="sepr_preview" />
-        <group id="image_preview" states="{'invisible': Bool(Eval('is_large_file'))}"  colspan="4">
+        <group id="image_preview" colspan="4">
             <field name="file_binary" widget="image" colspan="4"/>
         </group>
         <newline/>
-        <label id="preview" string="You can't preview large files" states="{'invisible': ~Bool(Eval('is_large_file'))}" colspan="3"/> 
+        <label id="preview" string="You can't preview large files" colspan="3"/>
     </xpath>
 </data>

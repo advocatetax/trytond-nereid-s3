@@ -99,6 +99,15 @@ class NereidStaticFile:
     )
     is_large_file = fields.Boolean('Is Large File')
 
+    @classmethod
+    def view_attributes(cls):
+        return super(NereidStaticFile, cls).view_attributes() + [
+            ('//group[@id="image_preview"]', 'states', {
+                'invisible': Bool(Eval('is_large_file'))
+            }), ('//label[@id="preview"]', 'states', {
+                'invisible': ~Bool(Eval('is_large_file'))
+            })]
+
     def get_post_form_args(self):
         """
         Returns the POST form arguments for the specific static file. It makes a

@@ -112,7 +112,7 @@ setup(
     %s = trytond.modules.%s
     """ % (module_name, module_name),
     tests_require=[
-        'mock',
+        'moto',
     ],
     test_suite='tests',
     cmdclass={

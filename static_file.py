@@ -174,7 +174,7 @@ class NereidStaticFile:
         bucket = self.folder.get_bucket()
         s3key = key.Key(bucket)
         s3key.key = self.s3_key
-        return s3key.set_contents_from_string(value[:])
+        return s3key.set_contents_from_string(bytes(value))
 
     def get_file_binary(self, name):
         '''
@@ -197,7 +197,7 @@ class NereidStaticFile:
                 # TODO: make the size configurable
                 return
             try:
-                return buffer(s3key.get_contents_as_string())
+                return fields.Binary.cast(s3key.get_contents_as_string())
             except exception.S3ResponseError as error:
                 if error.status == 404:
                     with Transaction().new_cursor(readonly=False) as txn:

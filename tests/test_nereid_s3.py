@@ -8,13 +8,6 @@
 
 import sys
 import os
-DIR = os.path.abspath(
-    os.path.normpath(
-        os.path.join(__file__, '..', '..', '..', '..', '..', 'trytond')
-    )
-)
-if os.path.isdir(DIR):
-    sys.path.insert(0, os.path.dirname(DIR))
 
 import unittest
 
@@ -26,6 +19,13 @@ from trytond.tests.test_tryton import (
 )
 from trytond.transaction import Transaction
 from trytond.config import config
+DIR = os.path.abspath(
+    os.path.normpath(
+        os.path.join(__file__, '..', '..', '..', '..', '..', 'trytond')
+    )
+)
+if os.path.isdir(DIR):
+    sys.path.insert(0, os.path.dirname(DIR))
 
 config.set('nereid_s3', 's3_access_key', 'ABCD')
 config.set('nereid_s3', 's3_secret_key', '123XYZ')

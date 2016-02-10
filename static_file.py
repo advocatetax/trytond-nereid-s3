@@ -90,6 +90,10 @@ class NereidStaticFolder:
             config.get('nereid_s3', 'bucket'),
         )
 
+    @staticmethod
+    def default_s3_upload_form_ttl():
+        return 600
+
 
 class NereidStaticFile:
     __name__ = "nereid.static.file"

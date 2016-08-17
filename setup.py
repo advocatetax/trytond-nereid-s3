@@ -87,8 +87,8 @@ setup(
         'trytond.modules.%s.tests' % module_name,
     ],
     package_data={
-        'trytond.modules.nereid_s3': info.get('xml', [])
-        + ['tryton.cfg', 'view/*.xml']
+        'trytond.modules.nereid_s3': info.get('xml', []) +
+        ['tryton.cfg', 'view/*.xml']
     },
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -112,7 +112,7 @@ setup(
     %s = trytond.modules.%s
     """ % (module_name, module_name),
     tests_require=[
-        'mock',
+        'moto',
     ],
     test_suite='tests',
     cmdclass={

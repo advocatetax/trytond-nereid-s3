@@ -8,7 +8,7 @@ import sys
 import os
 import unittest
 import re
-import ConfigParser
+import configparser
 from setuptools import setup, Command
 
 
@@ -44,7 +44,7 @@ class SQLiteTest(Command):
         sys.exit(-1)
 
 
-config = ConfigParser.ConfigParser()
+config = configparser.ConfigParser()
 config.readfp(open('tryton.cfg'))
 info = dict(config.items('tryton'))
 
@@ -87,8 +87,9 @@ setup(
         'trytond.modules.%s.tests' % module_name,
     ],
     package_data={
-        'trytond.modules.nereid_s3': info.get('xml', []) +
-        ['tryton.cfg', 'view/*.xml']
+        'trytond.modules.nereid_s3': info.get('xml', []) + [
+            'tryton.cfg', 'view/*.xml'
+        ]
     },
     classifiers=[
         'Development Status :: 5 - Production/Stable',

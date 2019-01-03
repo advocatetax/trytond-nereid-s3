@@ -20,10 +20,9 @@ from trytond.pool import Pool, PoolMeta
 from trytond.model import ModelView
 
 __all__ = ['NereidStaticFolder', 'NereidStaticFile', 'UploadWizard']
-__metaclass__ = PoolMeta
 
 
-class NereidStaticFolder:
+class NereidStaticFolder(metaclass=PoolMeta):
     __name__ = "nereid.static.folder"
 
     is_private = fields.Boolean(
@@ -95,7 +94,7 @@ class NereidStaticFolder:
         return 600
 
 
-class NereidStaticFile:
+class NereidStaticFile(metaclass=PoolMeta):
     __name__ = "nereid.static.file"
 
     s3_key = fields.Function(

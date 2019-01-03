@@ -5,7 +5,7 @@
 
 '''
 from trytond.pool import Pool
-from static_file import NereidStaticFolder, NereidStaticFile, UploadWizard
+from .static_file import NereidStaticFolder, NereidStaticFile, UploadWizard
 
 
 def register():

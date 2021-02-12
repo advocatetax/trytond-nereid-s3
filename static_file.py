@@ -5,9 +5,8 @@
     Static File
 
 """
-from boto.s3 import connection
-from boto.s3 import key
-from boto import exception
+import boto3
+from botocore.exceptions import ClientError
 import base64
 import json
 
@@ -71,21 +70,22 @@ class NereidStaticFolder(metaclass=PoolMeta):
         if self.name == '_private':
             self.raise_user_error('invalid_name')
 
-    def get_s3_connection(self):
+    def get_s3_resource(self):
         """
-        Returns an active S3 connection object
+        Returns an active S3 resource object
         """
-        return connection.S3Connection(
-            config.get('nereid_s3', 'access_key'),
-            config.get('nereid_s3', 'secret_key')
+        return boto3.resource(
+            's3',
+            aws_access_key_id=config.get('nereid_s3', 'access_key'),
+            aws_secret_access_key=config.get('nereid_s3', 'secret_key')
         )
 
     def get_bucket(self):
         '''
         Return an S3 bucket for the static file
         '''
-        s3_conn = self.get_s3_connection()
-        return s3_conn.get_bucket(
+        s3 = self.get_s3_resource()
+        return s3.Bucket(
             config.get('nereid_s3', 'bucket'),
         )
 
@@ -123,12 +123,11 @@ class NereidStaticFile(metaclass=PoolMeta):
         if not self.folder.s3_allow_large_uploads:
             self.folder.raise_user_error('folder_not_for_large_uploads')
 
-        conn = self.folder.get_s3_connection()
-        res = conn.build_post_form_args(
-            config.get('nereid_s3', 'bucket'),
-            self.get_s3_key('s3_key'),
-            http_method='https',
-            expires_in=self.folder.s3_upload_form_ttl,
+        s3 = self.folder.get_s3_resource()
+        res = s3.generate_presigned_post(
+            Bucket=config.get('nereid_s3', 'bucket'),
+            Key=self.get_s3_key('s3_key'),
+            ExpiresIn=self.folder.s3_upload_form_ttl,
         )
         return res
 
@@ -175,9 +174,7 @@ class NereidStaticFile(metaclass=PoolMeta):
         if self.is_large_file:
             return
         bucket = self.folder.get_bucket()
-        s3key = key.Key(bucket)
-        s3key.key = self.s3_key
-        return s3key.set_contents_from_string(bytes(value))
+        return bucket.put_object(Key=self.s3_key, Body=bytes(value))
 
     def get_file_binary(self, name):
         '''
@@ -188,21 +185,14 @@ class NereidStaticFile(metaclass=PoolMeta):
         :return: File buffer
         '''
         if self.folder.type == "s3":
-            bucket = self.folder.get_bucket()
-            s3key = bucket.lookup(self.s3_key)
-            if s3key is None:
-                self.raise_user_warning(
-                    's3_file_missing',
-                    'file_empty_s3'
-                )
-                return
-            if s3key.size > (1000000 * 10):     # 10 MB
-                # TODO: make the size configurable
-                return
+            s3 = self.folder.get_s3_resource()
             try:
-                return fields.Binary.cast(s3key.get_contents_as_string())
-            except exception.S3ResponseError as error:
-                if error.status == 404:
+                s3key = s3.Object(
+                    config.get('nereid_s3', 'bucket'),
+                    self.s3_key,
+                ).get()
+            except ClientError as error:
+                if error.response['Error']['Code'] == 'NoSuchKey':
                     with Transaction().new_cursor(readonly=False) as txn:
                         self.raise_user_warning(
                             's3_file_missing',
@@ -212,6 +202,11 @@ class NereidStaticFile(metaclass=PoolMeta):
                         txn.cursor.commit()
                     return
                 raise
+
+            if s3key['ContentLength'] > (1000000 * 10):     # 10 MB
+                # TODO: make the size configurable
+                return
+            return fields.Binary.cast(s3key['Body'].read().decode('utf-8'))
         return super(NereidStaticFile, self).get_file_binary(name)
 
     def get_file_path(self, name):

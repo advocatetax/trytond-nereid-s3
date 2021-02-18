@@ -7,8 +7,8 @@
 """
 import unittest
 
-import boto
-from moto import mock_s3_deprecated
+import boto3
+from moto import mock_s3
 import trytond.tests.test_tryton
 from trytond.tests.test_tryton import with_transaction, ModuleTestCase
 from trytond.pool import Pool
@@ -27,7 +27,7 @@ class TestNereidS3(ModuleTestCase):
     module = 'nereid_s3'
 
     @with_transaction()
-    @mock_s3_deprecated
+    @mock_s3
     def test0010_static_file(self):
         """
         Checks that file is saved to amazon s3
@@ -36,8 +36,8 @@ class TestNereidS3(ModuleTestCase):
         StaticFolder = Pool().get('nereid.static.folder')
 
         # Create test bucket to save s3 data
-        conn = boto.connect_s3()
-        conn.create_bucket(config.get('nereid_s3', 'bucket'))
+        conn = boto3.resource('s3', region_name='us-east-1')
+        conn.create_bucket(Bucket=config.get('nereid_s3', 'bucket'))
 
         # Create folder for amazon s3
         folder, = StaticFolder.create([{

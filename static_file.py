@@ -206,7 +206,7 @@ class NereidStaticFile(metaclass=PoolMeta):
             if s3key['ContentLength'] > (1000000 * 10):     # 10 MB
                 # TODO: make the size configurable
                 return
-            return fields.Binary.cast(s3key['Body'].read().decode('utf-8'))
+            return fields.Binary.cast(s3key['Body'].read())
         return super(NereidStaticFile, self).get_file_binary(name)
 
     def get_file_path(self, name):

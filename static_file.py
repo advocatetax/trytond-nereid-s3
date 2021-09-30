@@ -204,7 +204,7 @@ class NereidStaticFile:
                 return fields.Binary.cast(s3key.get_contents_as_string())
             except exception.S3ResponseError as error:
                 if error.status == 404:
-                    with Transaction().new_cursor(readonly=False) as txn:
+                    with Transaction().new_transaction(readonly=False) as txn:
                         self.raise_user_warning(
                             's3_file_missing',
                             'file_empty_s3'
